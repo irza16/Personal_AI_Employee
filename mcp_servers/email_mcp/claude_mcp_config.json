@@ -1,0 +1,14 @@
+{
+  "servers": [
+    {
+      "name": "email_mcp",
+      "command": "node",
+      "args": [
+        "./mcp_servers/email_mcp/index.js"
+      ],
+      "env": {
+        "VAULT_PATH": "./AI_Employee_Vault"
+      }
+    }
+  ]
+}

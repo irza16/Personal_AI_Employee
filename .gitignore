@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+apidoc/
+
+# Logs
+*.log
+ai_employee_orchestrator.log
+ai_employee_watcher.log
+gmail_watcher.log
+linkedin_poster.log
+whatsapp_watcher.log
+
+# Browser sessions and cache
+AI_Employee_Vault/whatsapp_session/
+AI_Employee_Vault/linkedin_session/
+AI_Employee_Vault/credentials.json
+AI_Employee_Vault/token.json
+
+# Local config
+.AI_Employee_Vault/logs/
+AI_Employee_Vault/Logs/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Browser extension data
+*.crx
+*.xpi
+
+# Cache directories
+.cache/
+.node_cache/
+
+# Playwright traces and videos
+test-results/
+traces/
+
+# Local vault data that should not be committed
+AI_Employee_Vault/Done/*
+AI_Employee_Vault/Needs_Action/*
+AI_Employee_Vault/Approved/*
+AI_Employee_Vault/Pending_Approval/*
+AI_Employee_Vault/Rejected/*
+AI_Employee_Vault/Plans/*
+AI_Employee_Vault/Logs/*
+AI_Employee_Vault/Briefings/*
+AI_Employee_Vault/Accounting/*
+
+# Specific files that should not be committed
+AI_Employee_Vault/.env
+AI_Employee_Vault/credentials.json
+AI_Employee_Vault/token.json
