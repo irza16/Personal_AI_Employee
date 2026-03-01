@@ -36,12 +36,20 @@ class AIEmployeeOrchestrator:
         self.rejected_path = self.vault_path / 'Rejected'
         self.done_path = self.vault_path / 'Done'
         self.logs_path = self.vault_path / 'Logs'
+        self.briefings_path = self.vault_path / 'Briefings'
+        self.invoices_path = self.vault_path / 'Invoices'
+        self.accounting_path = self.vault_path / 'Accounting'
+        self.needs_action_path = self.vault_path / 'Needs_Action'
 
         # Create directories if they don't exist
         self.approved_path.mkdir(parents=True, exist_ok=True)
         self.rejected_path.mkdir(parents=True, exist_ok=True)
         self.done_path.mkdir(parents=True, exist_ok=True)
         self.logs_path.mkdir(parents=True, exist_ok=True)
+        self.briefings_path.mkdir(parents=True, exist_ok=True)
+        self.invoices_path.mkdir(parents=True, exist_ok=True)
+        self.accounting_path.mkdir(parents=True, exist_ok=True)
+        self.needs_action_path.mkdir(parents=True, exist_ok=True)
 
     def start_filesystem_watcher(self):
         """Start the filesystem watcher process"""
@@ -89,6 +97,54 @@ class AIEmployeeOrchestrator:
 
         except Exception as e:
             logging.error(f"Failed to start WhatsApp watcher: {str(e)}")
+            return None
+
+    def start_facebook_watcher(self):
+        """Start the Facebook watcher process"""
+        try:
+            # Start the Facebook watcher as a subprocess
+            facebook_process = subprocess.Popen([
+                sys.executable, 'facebook_poster.py'
+            ], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+            self.processes.append(facebook_process)
+            logging.info("Facebook poster started with PID: {}".format(facebook_process.pid))
+            return facebook_process
+
+        except Exception as e:
+            logging.warning(f"Failed to start Facebook poster: {str(e)}")
+            return None
+
+    def start_instagram_watcher(self):
+        """Start the Instagram watcher process"""
+        try:
+            # Start the Instagram watcher as a subprocess
+            instagram_process = subprocess.Popen([
+                sys.executable, 'instagram_poster.py'
+            ], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+            self.processes.append(instagram_process)
+            logging.info("Instagram poster started with PID: {}".format(instagram_process.pid))
+            return instagram_process
+
+        except Exception as e:
+            logging.warning(f"Failed to start Instagram poster: {str(e)}")
+            return None
+
+    def start_twitter_watcher(self):
+        """Start the Twitter watcher process"""
+        try:
+            # Start the Twitter watcher as a subprocess
+            twitter_process = subprocess.Popen([
+                sys.executable, 'twitter_poster.py'
+            ], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+            self.processes.append(twitter_process)
+            logging.info("Twitter poster started with PID: {}".format(twitter_process.pid))
+            return twitter_process
+
+        except Exception as e:
+            logging.warning(f"Failed to start Twitter poster: {str(e)}")
             return None
 
     def log_action(self, action_type, actor, target, approval_status, result, parameters=None):
@@ -265,12 +321,64 @@ class AIEmployeeOrchestrator:
         self.process_approval_files()
         self.process_rejected_files()
 
+    def check_ceo_briefing_schedule(self):
+        """Check if it's time to generate CEO briefing (Sunday at 9 PM)"""
+        now = datetime.now()
+        # Check if it's Sunday and close to 9 PM (within a 30-minute window)
+        if now.weekday() == 6 and now.hour == 21 and now.minute < 30:  # Sunday at 9 PM
+            # Check if we've already generated the briefing today
+            briefing_file = self.briefings_path / f"{now.strftime('%Y-%m-%d')}_Monday_Briefing.md"
+            if not briefing_file.exists():
+                logging.info("Time to generate CEO briefing...")
+                try:
+                    subprocess.Popen([sys.executable, 'ceo_briefing.py', '--generate'])
+                    logging.info("Started CEO briefing generation process")
+                except Exception as e:
+                    logging.error(f"Failed to start CEO briefing generation: {str(e)}")
+
+    def handle_ralph_wiggum_loops(self):
+        """Check for Ralph Wiggum loop triggers in Needs_Action/ folder"""
+        for file_path in self.needs_action_path.glob('RALPH_WIGGUM_*.md'):
+            try:
+                with open(file_path, 'r') as f:
+                    content = f.read()
+
+                # Look for Ralph Wiggum directives in the file
+                if 'ralph_wiggum_start' in content.lower():
+                    # Extract task description
+                    lines = content.split('\n')
+                    task_description = ""
+
+                    for line in lines:
+                        if 'task:' in line.lower() or 'description:' in line.lower():
+                            task_description = line.split(':', 1)[1].strip()
+                            break
+
+                    if task_description:
+                        logging.info(f"Starting Ralph Wiggum loop for task: {task_description}")
+                        try:
+                            subprocess.Popen([sys.executable, 'ralph_wiggum.py', task_description])
+                            logging.info("Started Ralph Wiggum autonomous loop")
+
+                            # Move the trigger file to Done after starting the loop
+                            done_file = self.done_path / f"RALPH_WIGGUM_TRIGGERED_{file_path.name}"
+                            file_path.rename(done_file)
+                        except Exception as e:
+                            logging.error(f"Failed to start Ralph Wiggum loop: {str(e)}")
+                    else:
+                        logging.warning(f"No task description found in Ralph Wiggum trigger file: {file_path}")
+
+            except Exception as e:
+                logging.error(f"Error processing Ralph Wiggum trigger file {file_path}: {str(e)}")
+
     def check_processes(self):
         """Check if managed processes are still running"""
-        for i, process in enumerate(self.processes[:]):
+        # Iterate backwards to avoid index shifting issues when removing processes
+        for i in range(len(self.processes) - 1, -1, -1):
+            process = self.processes[i]
             if process.poll() is not None:
                 logging.warning(f"Process {process.pid} has terminated unexpectedly")
-                # In a real implementation, we might want to restart the process
+                # Remove the terminated process
                 del self.processes[i]
 
     def run(self):
@@ -294,6 +402,21 @@ class AIEmployeeOrchestrator:
         if not whatsapp_watcher:
             logging.warning("Failed to start WhatsApp watcher, continuing anyway")
 
+        # Start the Facebook poster
+        facebook_watcher = self.start_facebook_watcher()
+        if not facebook_watcher:
+            logging.warning("Failed to start Facebook poster, continuing anyway")
+
+        # Start the Instagram poster
+        instagram_watcher = self.start_instagram_watcher()
+        if not instagram_watcher:
+            logging.warning("Failed to start Instagram poster, continuing anyway")
+
+        # Start the Twitter poster
+        twitter_watcher = self.start_twitter_watcher()
+        if not twitter_watcher:
+            logging.warning("Failed to start Twitter poster, continuing anyway")
+
         self.running = True
         logging.info("AI Employee Orchestrator is now running")
 
@@ -304,6 +427,12 @@ class AIEmployeeOrchestrator:
 
                 # Check for approval and rejection files
                 self.check_and_process_folders()
+
+                # Check for CEO briefing schedule trigger
+                self.check_ceo_briefing_schedule()
+
+                # Handle Ralph Wiggum loop triggers
+                self.handle_ralph_wiggum_loops()
 
                 # Sleep briefly before checking again
                 time.sleep(5)

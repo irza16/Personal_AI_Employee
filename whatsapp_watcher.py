@@ -7,11 +7,14 @@ import os
 import sys
 import time
 import logging
+import hashlib
+import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright
 from playwright._impl._errors import TargetClosedError
 from dotenv import load_dotenv
+import re
 
 import io
 
@@ -170,11 +173,11 @@ Message: {message_text}
             return "Unknown_Contact"
 
         # Strip any URL (anything starting with http:// or https://) and replace with "Group_Chat"
-        if contact_name.startswith(('http://', 'https://')):
+        if 'http://' in contact_name or 'https://' in contact_name:
             contact_name = "Group_Chat"
 
         # Remove ALL characters that are invalid in Windows filenames: \ / : * ? " < > |
-        invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', '.', ',']
+        invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|']
         for char in invalid_chars:
             contact_name = contact_name.replace(char, '_')
 
