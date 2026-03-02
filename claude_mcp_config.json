@@ -3,9 +3,31 @@
     {
       "name": "email_mcp",
       "command": "node",
-      "args": ["./mcp_servers/email_mcp/index.js"],
+      "args": [
+        "./mcp_servers/email_mcp/index.js"
+      ],
       "env": {
         "VAULT_PATH": "./AI_Employee_Vault"
+      }
+    },
+    {
+      "name": "accounting_mcp",
+      "command": "node",
+      "args": [
+        "./mcp_servers/accounting_mcp/index.js"
+      ],
+      "env": {
+        "VAULT_PATH": "C:\\Users\\armee\\OneDrive\\Documents\\GitHub\\Personal_AI_Employee"
+      }
+    },
+    {
+      "name": "social_mcp",
+      "command": "node",
+      "args": [
+        "./mcp_servers/social_mcp/index.js"
+      ],
+      "env": {
+        "VAULT_PATH": "C:\\Users\\armee\\OneDrive\\Documents\\GitHub\\Personal_AI_Employee"
       }
     }
   ]

@@ -8,9 +8,13 @@ import json
 import logging
 import subprocess
 import sys
+import shutil
+import platform
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
+from openai import OpenAI
+import time
 
 # Load environment variables
 load_dotenv()
@@ -70,7 +74,7 @@ class RalphWiggum:
         return filepath
 
     def run_claude_iteration(self, context=""):
-        """Run Claude Code in a loop using subprocess."""
+        """Run Claude Code in a loop using direct HTTP call to local router."""
         try:
             # Prepare the prompt for Claude
             prompt = f"""
@@ -85,27 +89,46 @@ class RalphWiggum:
             Otherwise, continue working on the task and provide updates.
             """
 
-            # Run Claude Code with the prompt
-            result = subprocess.run([
-                'claude', 'ask', prompt
-            ], capture_output=True, text=True, cwd=str(self.vault_path))
+            # Initialize OpenAI client pointing to local Claude Code Router
+            client = OpenAI(
+                api_key="k7dMEzvLfFSAoBJpDp2e0ayX2ps21E8K2WmysqTdOEYzPvV644BWjAI6jZIqECIDn2qhZQ6fjIa95lUJdSHr1g",
+                base_url="http://127.0.0.1:3456/v1"
+            )
 
-            if result.returncode == 0:
-                output = result.stdout
-                logger.info(f"Claude iteration completed successfully")
-                return output
-            else:
-                logger.error(f"Claude iteration failed: {result.stderr}")
-                return f"Error: Claude execution failed with return code {result.returncode}\nError output: {result.stderr}"
+            # Create messages for the API call
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"You are an AI Employee managing an Obsidian vault at {self.vault_path}. Complete the task and end with <promise>TASK_COMPLETE</promise> when fully done."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+
+            # Call the Claude Code Router API
+            response = client.chat.completions.create(
+                model="claude-3-5-sonnet-20241022",
+                messages=messages,
+                max_tokens=2000
+            )
+
+            output = response.choices[0].message.content
+
+            logger.info(f"Claude iteration completed successfully")
+            logger.debug(f"Claude response: {output[:500]}...")  # Log first 500 chars for debugging
+
+            return output
 
         except Exception as e:
-            logger.error(f"Error running Claude iteration: {e}")
+            logger.error(f"Claude iteration failed: {e}")
             return f"Error: {str(e)}"
 
     def check_completion_condition(self, claude_output, completion_file=None):
         """Check if completion condition is met."""
         # Check for promise-based completion
-        if "<promise>TASK_COMPLETE</promise>" in claude_output:
+        if "<promise>TASK_COMPLETE</promise>" in claude_output or "TASK_COMPLETE" in claude_output:
             logger.info("Task completion promise found in Claude output")
             return True
 
